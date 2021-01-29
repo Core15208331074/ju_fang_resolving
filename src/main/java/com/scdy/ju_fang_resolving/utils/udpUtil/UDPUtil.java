@@ -17,7 +17,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * UDP通道传输工具
@@ -132,7 +134,7 @@ public class UDPUtil {
      */
     @SneakyThrows
     public static String receiveHexadecimalData() {
-        byte[] bytes = new byte[1024 * 2];
+        byte[] bytes = new byte[1050];
         DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
         DatagramSocket receive = new DatagramSocket(Integer.valueOf(port_listening));
         receive.receive(packet);
@@ -172,24 +174,116 @@ public class UDPUtil {
     /**
      * 解析十六进制数据
      */
-    public static void resolvingData(String hexadecimalData) {
-        JSONObject object = new JSONObject();
+    public static JSONObject resolvingData(String hexadecimalData) throws InterruptedException {
         String[] dataArray = hexadecimalData.split(" ");
         if (CommonUtil.isNotNull(dataArray) && dataArray.length > 0) {
-            StringBuffer buffer = new StringBuffer();
-            //取出头
+            //帧头
+            StringBuffer header = new StringBuffer();
+            //通道数据
+            StringBuffer channel = new StringBuffer();
+            //厂家固定数据
+            StringBuffer constantOfFactory = new StringBuffer();
+            //外部参考电流频率
+            StringBuffer frequencyOfElecCurr = new StringBuffer();
+            //其他数据帧值
+            StringBuffer other = new StringBuffer();
             for (int i = 0; i < dataArray.length; i++) {
-                buffer.append(dataArray[i]);
-                if (i == 5) {
-                    break;
+                if (i <= 5) {//帧头
+                    header.append(dataArray[i]);
+                    header.append(" ");
+                } else if (i >= 6 && i <= 133) {//通道数据
+                    channel.append(dataArray[i]);
+                    channel.append(" ");
+                } else if (i >= 158 && i <= 162) {//厂家固定数据
+                    constantOfFactory.append(dataArray[i]);
+                    constantOfFactory.append(" ");
+                } else if (i >= 163 && i <= 164) {//外部参考电流频率
+                    frequencyOfElecCurr.append(dataArray[i]);
+                    frequencyOfElecCurr.append(" ");
+                } else if (i >= 165) {
+                    continue;
+                } else {
+                    other.append(dataArray[i]);
+                    other.append(" ");
                 }
             }
-            JSONArray channel = new JSONArray();
-            object.put("head", buffer.toString());
-        } else {
-            object.put("head", null);
-        }
+            JSONObject data = new JSONObject();
+            data.put("header", header.toString());
+            data.put("constantOfFactory", constantOfFactory.toString());
+            data.put("frequencyOfElecCurr", frequencyOfElecCurr.toString());
+            data.put("other", other.toString());
 
+            //将通道数据保存到文件
+            composeFrame(channel.toString().split(" "));
+            return data;
+        } else {
+            return null;
+        }
+    }
+
+
+    @SneakyThrows
+    private static void composeFrame(String[] frames) {
+        log.info(String.valueOf(frames.length));
+        if (CommonUtil.isNotNull(frames) && frames.length % 8 == 0) {
+            StringBuffer channel01 = new StringBuffer();
+            StringBuffer channel02 = new StringBuffer();
+            StringBuffer channel03 = new StringBuffer();
+            StringBuffer channel04 = new StringBuffer();
+            for (int i = 0; i < frames.length; i++) {
+                if (i % 8 == 0 || i % 8 == 1) {
+                    channel01.append(frames[i]);
+                    channel01.append(" ");
+                }
+                if (i % 8 == 2 || i % 8 == 3) {
+                    channel02.append(frames[i]);
+                    channel02.append(" ");
+                }
+                if (i % 8 == 4 || i % 8 == 5) {
+                    channel03.append(frames[i]);
+                    channel03.append(" ");
+                }
+                if (i % 8 == 6 || i % 8 == 7) {
+                    channel04.append(frames[i]);
+                    channel04.append(" ");
+                }
+            }
+            byte[] chan01 = channel01.toString().getBytes();
+            OutputStream out01 = new FileOutputStream(CommonUtil.getFile("channel01"));
+            BufferedOutputStream bOut01 = new BufferedOutputStream(out01);
+            bOut01.write(chan01, 0, chan01.length);
+            out01.flush();
+            bOut01.flush();
+            out01.close();
+            bOut01.close();
+
+            byte[] chan02 = channel02.toString().getBytes();
+            OutputStream out02 = new FileOutputStream(CommonUtil.getFile("channel02"));
+            BufferedOutputStream bOut02 = new BufferedOutputStream(out02);
+            bOut02.write(chan02, 0, chan02.length);
+            out02.flush();
+            bOut02.flush();
+            out02.close();
+            bOut02.close();
+
+            byte[] chan03 = channel03.toString().getBytes();
+            OutputStream out03 = new FileOutputStream(CommonUtil.getFile("channel03"));
+            BufferedOutputStream bOut03 = new BufferedOutputStream(out03);
+            bOut03.write(chan03, 0, chan01.length);
+            out03.flush();
+            bOut03.flush();
+            out03.close();
+            bOut03.close();
+
+            byte[] chan04 = channel04.toString().getBytes();
+            OutputStream out04 = new FileOutputStream(CommonUtil.getFile("channel04"));
+            BufferedOutputStream bOut04 = new BufferedOutputStream(out04);
+            bOut04.write(chan04, 0, chan04.length);
+            out04.flush();
+            bOut04.flush();
+            out04.close();
+            bOut04.close();
+        }
     }
 
 }

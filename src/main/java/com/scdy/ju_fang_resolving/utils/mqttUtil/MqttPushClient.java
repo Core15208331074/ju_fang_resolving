@@ -1,4 +1,4 @@
-package com.scdy.java.modules.hk_util.mqttUtil;
+package com.scdy.ju_fang_resolving.utils.mqttUtil;
 
 import com.scdy.ju_fang_resolving.utils.mqttUtil.MqttPushCallback;
 import org.eclipse.paho.client.mqttv3.*;

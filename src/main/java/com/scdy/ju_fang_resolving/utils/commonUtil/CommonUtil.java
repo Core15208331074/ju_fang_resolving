@@ -8,6 +8,7 @@ import java.util.Properties;
 
 public class CommonUtil {
 
+
     @SneakyThrows
     public static File getFile() {
         //获取根目录
@@ -16,8 +17,26 @@ public class CommonUtil {
         if (!parent.exists()) {
             parent.mkdirs();
         }
-
         File file = new File(parent.getAbsolutePath() + File.separator + System.currentTimeMillis() + ".txt");
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        return file;
+    }
+
+    @SneakyThrows
+    public static File getFile(String fileName) {
+        //获取根目录
+        File parent = new File(ResourceUtils.getURL("classpath:")
+                .getPath() + File.separator + "temporary");
+        if (!parent.exists()) {
+            parent.mkdirs();
+        }
+        if (!(isNotNull(fileName))) {
+            Long l = System.currentTimeMillis();
+            fileName = l.toString();
+        }
+        File file = new File(parent.getAbsolutePath() + File.separator + fileName + ".txt");
         if (!file.exists()) {
             file.createNewFile();
         }

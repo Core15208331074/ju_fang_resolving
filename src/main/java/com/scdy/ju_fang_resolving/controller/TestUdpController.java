@@ -1,6 +1,8 @@
 package com.scdy.ju_fang_resolving.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPObject;
+import com.scdy.ju_fang_resolving.utils.mqttUtil.MqttPushClient;
 import com.scdy.ju_fang_resolving.utils.udpUtil.UDPUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -42,7 +44,8 @@ public class TestUdpController {
     public String receiveHexadecimalData() {
         try {
             String hexadecimalData = UDPUtil.receiveHexadecimalData();
-            UDPUtil.resolvingData(hexadecimalData);
+            JSONObject object = UDPUtil.resolvingData(hexadecimalData);
+            MqttPushClient.getInstance().publish("ju_fang_resolving", object.toJSONString());
             return hexadecimalData;
         } catch (Exception e) {
             e.printStackTrace();
