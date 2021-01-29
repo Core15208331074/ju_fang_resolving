@@ -194,13 +194,13 @@ public class UDPUtil {
                 } else if (i >= 6 && i <= 133) {//通道数据
                     channel.append(dataArray[i]);
                     channel.append(" ");
-                } else if (i >= 158 && i <= 162) {//厂家固定数据
+                } else if (i >= 518 && i <= 522) {//厂家固定数据
                     constantOfFactory.append(dataArray[i]);
                     constantOfFactory.append(" ");
-                } else if (i >= 163 && i <= 164) {//外部参考电流频率
+                } else if (i >= 523 && i <= 524) {//外部参考电流频率
                     frequencyOfElecCurr.append(dataArray[i]);
                     frequencyOfElecCurr.append(" ");
-                } else if (i >= 165) {
+                } else if (i >= 525) {
                     continue;
                 } else {
                     other.append(dataArray[i]);
