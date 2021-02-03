@@ -1,23 +1,17 @@
 package com.scdy.ju_fang_resolving.utils.udpUtil;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.JSONPObject;
 import com.scdy.ju_fang_resolving.utils.commonUtil.CommonUtil;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.ResourceUtils;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -47,6 +41,12 @@ public class UDPUtil {
             e.printStackTrace();
         }
 
+    }
+
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            System.out.println(UUID.randomUUID().toString().replace("-", ""));
+        }
     }
 
     /**
@@ -181,6 +181,8 @@ public class UDPUtil {
             StringBuffer header = new StringBuffer();
             //通道数据
             StringBuffer channel = new StringBuffer();
+            //每一通道判断内容
+            StringBuffer channelJudge = new StringBuffer();
             //厂家固定数据
             StringBuffer constantOfFactory = new StringBuffer();
             //外部参考电流频率
@@ -194,13 +196,16 @@ public class UDPUtil {
                 } else if (i >= 6 && i <= 133) {//通道数据
                     channel.append(dataArray[i]);
                     channel.append(" ");
-                } else if (i >= 518 && i <= 522) {//厂家固定数据
+                } else if (i >= 518 && i <= 541) {
+                    channelJudge.append(dataArray[i]);//通道内容判断数据
+                    channelJudge.append(" ");
+                } else if (i >= 542 && i <= 546) {//厂家固定数据
                     constantOfFactory.append(dataArray[i]);
                     constantOfFactory.append(" ");
-                } else if (i >= 523 && i <= 524) {//外部参考电流频率
+                } else if (i >= 547 && i <= 548) {//外部参考电流频率
                     frequencyOfElecCurr.append(dataArray[i]);
                     frequencyOfElecCurr.append(" ");
-                } else if (i >= 525) {
+                } else if (i >= 549) {
                     continue;
                 } else {
                     other.append(dataArray[i]);
@@ -208,13 +213,14 @@ public class UDPUtil {
                 }
             }
             JSONObject data = new JSONObject();
-            data.put("header", header.toString());
-            data.put("constantOfFactory", constantOfFactory.toString());
-            data.put("frequencyOfElecCurr", frequencyOfElecCurr.toString());
-            data.put("other", other.toString());
+            data.put("header", header.toString().substring(0, header.toString().lastIndexOf(" ")));
+            data.put("constantOfFactory", constantOfFactory.toString().substring(0, constantOfFactory.toString().lastIndexOf(" ")));
+            data.put("frequencyOfElecCurr", frequencyOfElecCurr.toString().substring(0, frequencyOfElecCurr.toString().lastIndexOf(" ")));
+            data.put("other", other.toString().substring(0, other.toString().lastIndexOf(" ")));
 
             //将通道数据保存到文件
-            composeFrame(channel.toString().split(" "));
+            composeChannelFrame(channel.toString().split(" "));
+            data.put("channelJudge", composeChannelJudgeFrame(channelJudge.toString().split(" ")));
             return data;
         } else {
             return null;
@@ -223,7 +229,7 @@ public class UDPUtil {
 
 
     @SneakyThrows
-    private static void composeFrame(String[] frames) {
+    private static void composeChannelFrame(String[] frames) {
         log.info(String.valueOf(frames.length));
         if (CommonUtil.isNotNull(frames) && frames.length % 8 == 0) {
             StringBuffer channel01 = new StringBuffer();
@@ -286,4 +292,58 @@ public class UDPUtil {
         }
     }
 
+
+    @SneakyThrows
+    private static Map<String, String> composeChannelJudgeFrame(String[] frames) {
+        log.info(String.valueOf(frames.length));
+        if (CommonUtil.isNotNull(frames) && frames.length % 6 == 0) {
+            StringBuffer eventHappenBuffer = new StringBuffer();
+            StringBuffer dischargeTypeBuffer = new StringBuffer();
+            StringBuffer dischargeDiagnosisBuffer = new StringBuffer();
+            StringBuffer phaseBuffer = new StringBuffer();
+            StringBuffer avgBuffer = new StringBuffer();
+            StringBuffer maxBuffer = new StringBuffer();
+            for (int i = 0; i < frames.length; i++) {
+                if (i % 6 == 0) {
+                    eventHappenBuffer.append(frames[i]);
+                    eventHappenBuffer.append(" ");
+                }
+                if (i % 6 == 1) {
+                    dischargeTypeBuffer.append(frames[i]);
+                    dischargeTypeBuffer.append(" ");
+                }
+                if (i % 6 == 2) {
+                    dischargeDiagnosisBuffer.append(frames[i]);
+                    dischargeDiagnosisBuffer.append(" ");
+                }
+                if (i % 6 == 3) {
+                    phaseBuffer.append(frames[i]);
+                    phaseBuffer.append(" ");
+                }
+                if (i % 6 == 4) {
+                    avgBuffer.append(frames[i]);
+                    avgBuffer.append(" ");
+                }
+                if (i % 6 == 5) {
+                    maxBuffer.append(frames[i]);
+                    maxBuffer.append(" ");
+                }
+            }
+            String eventHappen = eventHappenBuffer.toString();
+            String dischargeType = dischargeTypeBuffer.toString();
+            String dischargeDiagnosis = dischargeDiagnosisBuffer.toString();
+            String phase = phaseBuffer.toString();
+            String avg = avgBuffer.toString();
+            String max = maxBuffer.toString();
+            Map<String, String> map = new HashMap<>();
+            map.put("eventHappen", eventHappen.substring(0, eventHappen.lastIndexOf(" ")));
+            map.put("dischargeType", dischargeType.substring(0, dischargeType.lastIndexOf(" ")));
+            map.put("dischargeDiagnosis", dischargeDiagnosis.substring(0, dischargeDiagnosis.lastIndexOf(" ")));
+            map.put("phase", phase.substring(0, phase.lastIndexOf(" ")));
+            map.put("avg", avg.substring(0, avg.lastIndexOf(" ")));
+            map.put("max", max.substring(0, max.lastIndexOf(" ")));
+            return map;
+        }
+        return null;
+    }
 }
